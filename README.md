@@ -163,9 +163,4 @@ Open `http://localhost:3000` in your browser to launch **AquaMind AI**!
 
 ---
 
-## 🏅 Hackathon Criteria Alignment (Maverick Effect AI Challenge)
 
-- **Relevance**: Direct societal impact on Gujarat's water scarcity, agricultural supply, and urban non-revenue leak reduction.
-- **Innovation**: First closed-loop government operational system combining multi-agent AI with Jira-style task execution & digital signatures.
-- **Technical Accuracy**: Powered by Groq Llama-3.3 70B, OpenAI GPT-4o, time-series ML, and RAG policy search.
-- **Implementation**: Fully functional, zero-overlap GIS map, role-tailored dashboards, and complete backend REST API.
