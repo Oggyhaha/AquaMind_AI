@@ -89,7 +89,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
@@ -105,6 +105,36 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
     setInputText('');
     setIsTyping(true);
 
+    try {
+      // Call FastAPI Backend LLM endpoint (Groq / OpenAI API integration)
+      const response = await fetch('http://localhost:8000/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: userQuery,
+          role: userRole,
+          district: 'Ahmedabad'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: data.reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          roleBadge: data.provider || 'AquaMind LLM Engine'
+        };
+        setMessages(prev => [...prev, aiMsg]);
+        setIsTyping(false);
+        return;
+      }
+    } catch (err) {
+      console.warn("Backend API not reachable. Using intelligent domain fallback.");
+    }
+
+    // Client domain fallback if backend is offline
     setTimeout(() => {
       let responseText = "";
       const lower = userQuery.toLowerCase();
@@ -129,7 +159,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
       setMessages(prev => [...prev, aiMsg]);
       setIsTyping(false);
-    }, 1200);
+    }, 1000);
   };
 
   if (!isOpen) return null;
@@ -143,7 +173,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
             <Sparkles className="w-5 h-5 animate-spin" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold">AquaMind Role-Adapted AI</h3>
+            <h3 className="text-sm font-extrabold">AquaMind LLM Assistant</h3>
             <p className="text-[11px] text-cyan-300 font-mono font-bold">Role: {userRole.replace('_', ' ').toUpperCase()}</p>
           </div>
         </div>
@@ -181,7 +211,7 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
           <div className="flex justify-start">
             <div className="bg-white border border-slate-200 rounded-3xl p-3.5 text-xs text-slate-500 flex items-center space-x-2.5 font-bold">
               <Bot className="w-5 h-5 text-cyan-600 animate-spin" />
-              <span>Querying Qdrant Vector DB & Model Reasoning...</span>
+              <span>Querying Groq / OpenAI LLM & Qdrant Policy DB...</span>
             </div>
           </div>
         )}

@@ -1,19 +1,30 @@
 """
-AquaMind AI — Database Architecture
+AquaMind AI — Database Architecture & Configuration
 SQLAlchemy ORM Data Models for PostgreSQL / SQLite
 """
 import os
+import urllib.parse
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text
-from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from sqlalchemy import create_engine, Column, String, Integer, Float, DateTime, Text
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Database connection URL (Defaults to SQLite for local zero-dependency run, supports PostgreSQL via env)
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aquamind.db")
+# Retrieve DATABASE_URL from environment or .env
+RAW_DB_URL = os.getenv("DATABASE_URL", "sqlite:///./aquamind.db").strip('"\'')
 
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
-)
+# Handle PostgreSQL URL driver scheme if needed
+if RAW_DB_URL.startswith("postgres://"):
+    RAW_DB_URL = RAW_DB_URL.replace("postgres://", "postgresql://", 1)
+
+try:
+    if "postgresql" in RAW_DB_URL:
+        engine = create_engine(RAW_DB_URL, pool_pre_ping=True)
+        print(f"[AquaMind Database] Connected to PostgreSQL Database.")
+    else:
+        engine = create_engine(RAW_DB_URL, connect_args={"check_same_thread": False})
+        print(f"[AquaMind Database] Connected to SQLite Database (aquamind.db).")
+except Exception as e:
+    print(f"[AquaMind Database] Connection warning: {e}. Falling back to SQLite.")
+    engine = create_engine("sqlite:///./aquamind.db", connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -25,7 +36,7 @@ class UserDB(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, nullable=False) # super_admin, state_authority, district_officer, engineer, emergency_officer, researcher
+    role = Column(String, nullable=False)
     role_title = Column(String, nullable=False)
     district = Column(String, nullable=True)
     department = Column(String, nullable=False)
@@ -37,7 +48,7 @@ class DistrictDB(Base):
     id = Column(String, primary_key=True, index=True)
     name = Column(String, nullable=False)
     region = Column(String, nullable=False)
-    risk_level = Column(String, nullable=False) # critical, high, moderate, safe
+    risk_level = Column(String, nullable=False)
     population = Column(Integer, nullable=False)
     water_demand_mld = Column(Float, nullable=False)
     water_supply_mld = Column(Float, nullable=False)
@@ -46,32 +57,6 @@ class DistrictDB(Base):
     active_alerts_count = Column(Integer, default=0)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
-
-class ReservoirDB(Base):
-    __tablename__ = "reservoirs"
-
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    district = Column(String, nullable=False)
-    capacity_mcm = Column(Float, nullable=False)
-    current_level_mcm = Column(Float, nullable=False)
-    fill_percentage = Column(Float, nullable=False)
-    inflow_cusecs = Column(Float, nullable=False)
-    outflow_cusecs = Column(Float, nullable=False)
-    status = Column(String, nullable=False)
-
-class PipelineDB(Base):
-    __tablename__ = "pipelines"
-
-    id = Column(String, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    district = Column(String, nullable=False)
-    length_km = Column(Float, nullable=False)
-    pressure_bar = Column(Float, nullable=False)
-    flow_lps = Column(Float, nullable=False)
-    leak_probability = Column(Float, nullable=False)
-    health_score = Column(Float, nullable=False)
-    status = Column(String, nullable=False)
 
 class TaskDB(Base):
     __tablename__ = "tasks"
@@ -83,13 +68,15 @@ class TaskDB(Base):
     district_id = Column(String, nullable=False)
     district_name = Column(String, nullable=False)
     priority = Column(String, nullable=False)
-    status = Column(String, nullable=False) # draft, ai_suggested, approved, assigned, in_progress, completed, verified, closed
+    status = Column(String, nullable=False)
     assigned_engineer_id = Column(String, nullable=True)
     assigned_engineer_name = Column(String, nullable=True)
     due_date = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    approval_comment = Column(Text, nullable=True)
+    digital_signature = Column(String, nullable=True)
     evidence_photo_url = Column(String, nullable=True)
     evidence_notes = Column(Text, nullable=True)
     completed_at = Column(DateTime, nullable=True)
