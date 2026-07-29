@@ -1,35 +1,37 @@
 import React, { useState } from 'react';
 import { User, UserRole, SystemNotification } from '../../types';
-import { DEMO_USERS } from '../../data/mockData';
-import { ShieldAlert, Bell, Sparkles, ChevronDown, Radio, UserCheck, CheckCircle2, LogOut, FileText, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, Bell, Radio, LogOut, AlertTriangle, Sparkles, MessageSquare, CheckCircle2 } from 'lucide-react';
 
 interface NavbarProps {
   activeUser: User;
-  onSwitchRole: (role: UserRole) => void;
   onLogout: () => void;
   isEmergencyMode: boolean;
-  onToggleEmergencyMode: () => void;
+  emergencyDetails: { title: string; description: string; district: string; isTakenOver: boolean; takenOverBy?: string } | null;
+  onTriggerEmergencyClick: () => void;
+  onDeactivateEmergencyClick: () => void;
   isLiveSimulating: boolean;
   onToggleLiveSimulation: () => void;
   notifications: SystemNotification[];
   onMarkNotificationRead: (id: string) => void;
+  onToggleChat: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeUser,
-  onSwitchRole,
   onLogout,
   isEmergencyMode,
-  onToggleEmergencyMode,
+  emergencyDetails,
+  onTriggerEmergencyClick,
+  onDeactivateEmergencyClick,
   isLiveSimulating,
   onToggleLiveSimulation,
   notifications,
-  onMarkNotificationRead
+  onMarkNotificationRead,
+  onToggleChat
 }) => {
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isSecretary = activeUser.role === 'state_authority' || activeUser.role === 'super_admin';
 
   return (
     <header className={`sticky top-0 z-40 border-b transition-colors duration-300 ${
@@ -37,6 +39,28 @@ export const Navbar: React.FC<NavbarProps> = ({
         ? 'bg-red-950 border-red-800 text-white shadow-lg shadow-red-950/30' 
         : 'bg-white border-slate-200 text-slate-900 shadow-sm'
     }`}>
+      
+      {/* Global Emergency Alert Banner when Emergency Mode is Active */}
+      {isEmergencyMode && emergencyDetails && (
+        <div className="bg-red-600 text-white px-6 py-2 text-xs font-extrabold flex items-center justify-between animate-pulse">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 text-white" />
+            <span>STATEWIDE EMERGENCY CRISIS: <strong>{emergencyDetails.title}</strong> ({emergencyDetails.district} Zone) — "{emergencyDetails.description}"</span>
+          </div>
+          <div className="text-[11px] font-mono">
+            {emergencyDetails.isTakenOver ? (
+              <span className="bg-emerald-800 px-2.5 py-0.5 rounded text-emerald-100 font-bold">
+                ✓ Taken Over by {emergencyDetails.takenOverBy}
+              </span>
+            ) : (
+              <span className="bg-red-800 px-2.5 py-0.5 rounded text-white font-bold">
+                Awaiting District Officer Takeover
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-[1920px] mx-auto px-6 h-20 flex items-center justify-between">
         
         {/* Left Brand */}
@@ -70,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center Telemetry & Emergency Buttons */}
+        {/* Center Controls: Live Telemetry & Secretary-Only Emergency Trigger */}
         <div className="hidden md:flex items-center space-x-4">
           <button
             onClick={onToggleLiveSimulation}
@@ -84,65 +108,59 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Telemetry: <span className="font-mono font-extrabold">{isLiveSimulating ? 'LIVE 100Hz' : 'PAUSED'}</span></span>
           </button>
 
-          <button
-            onClick={onToggleEmergencyMode}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
-              isEmergencyMode
-                ? 'bg-red-600 hover:bg-red-700 text-white animate-bounce'
-                : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300'
-            }`}
-          >
-            <ShieldAlert className="w-4 h-4" />
-            <span>{isEmergencyMode ? 'EMERGENCY MODE ACTIVE' : 'Trigger Emergency Mode'}</span>
-          </button>
+          {/* Emergency Trigger Button Logic (Secretary Only!) */}
+          {isSecretary ? (
+            isEmergencyMode ? (
+              <button
+                onClick={onDeactivateEmergencyClick}
+                disabled={!emergencyDetails?.isTakenOver}
+                className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
+                  emergencyDetails?.isTakenOver
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-md'
+                    : 'bg-red-800 text-red-200 cursor-not-allowed border border-red-700'
+                }`}
+                title={emergencyDetails?.isTakenOver ? "Deactivate Emergency Mode" : "District Officer takeover required before deactivation"}
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <span>
+                  {emergencyDetails?.isTakenOver 
+                    ? 'Deactivate & Close Emergency' 
+                    : 'Emergency Active (Waiting for District Takeover)'}
+                </span>
+              </button>
+            ) : (
+              <button
+                onClick={onTriggerEmergencyClick}
+                className="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-extrabold bg-red-600 hover:bg-red-700 text-white shadow-md transition-all"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <span>+ Declare Statewide Emergency</span>
+              </button>
+            )
+          ) : (
+            <div className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center space-x-2 border ${
+              isEmergencyMode ? 'bg-red-600 text-white border-red-700 animate-bounce' : 'bg-slate-100 text-slate-500 border-slate-200'
+            }`}>
+              <ShieldAlert className="w-4 h-4" />
+              <span>{isEmergencyMode ? '🚨 EMERGENCY MODE ACTIVE' : 'Emergency Grid Normal'}</span>
+            </div>
+          )}
         </div>
 
-        {/* Right Menu & Profile */}
+        {/* Right Navigation Controls */}
         <div className="flex items-center space-x-4">
           
-          {/* Demo Role Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-sky-50 border border-sky-200 hover:border-sky-300 text-sky-900 text-xs font-bold shadow-xs transition-all"
-            >
-              <Sparkles className="w-4 h-4 text-sky-600" />
-              <span>Role: <strong className="text-blue-900">{activeUser.roleTitle}</strong></span>
-              <ChevronDown className="w-4 h-4 text-slate-500" />
-            </button>
+          {/* Inter-Department Chat Button */}
+          <button
+            onClick={onToggleChat}
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-sky-50 border border-sky-200 hover:bg-sky-100 text-sky-900 text-xs font-extrabold transition-all"
+            title="Open Inter-Department Command Chat"
+          >
+            <MessageSquare className="w-4 h-4 text-sky-600" />
+            <span>Inter-Dept Chat</span>
+          </button>
 
-            {showRoleDropdown && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-4 py-2 border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                  <span>Switch Role (Jury Quick Select)</span>
-                  <UserCheck className="w-4 h-4 text-sky-500" />
-                </div>
-                {Object.values(DEMO_USERS).map((user) => (
-                  <button
-                    key={user.role}
-                    onClick={() => {
-                      onSwitchRole(user.role);
-                      setShowRoleDropdown(false);
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-xs flex items-center justify-between hover:bg-sky-50 transition-colors ${
-                      activeUser.role === user.role ? 'bg-sky-100/70 font-bold text-sky-900 border-l-4 border-sky-600' : 'text-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <img src={user.avatar} alt={user.name} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
-                      <div>
-                        <div className="font-bold">{user.roleTitle}</div>
-                        <div className="text-[11px] text-slate-400">{user.email}</div>
-                      </div>
-                    </div>
-                    {activeUser.role === user.role && <CheckCircle2 className="w-4 h-4 text-sky-600 shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Notifications */}
+          {/* Notifications Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
@@ -189,12 +207,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
-          {/* User Profile & Sign Out */}
+          {/* User Profile Badge & Sign Out */}
           <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">
             <img src={activeUser.avatar} alt={activeUser.name} className="w-9 h-9 rounded-full object-cover border-2 border-sky-500 shadow-xs" />
             <div className="hidden lg:block text-left">
               <div className="text-xs font-extrabold text-slate-900">{activeUser.name}</div>
-              <div className="text-[11px] text-slate-500 font-medium">{activeUser.department}</div>
+              <div className="text-[11px] text-slate-500 font-medium">{activeUser.roleTitle}</div>
             </div>
             <button
               onClick={onLogout}

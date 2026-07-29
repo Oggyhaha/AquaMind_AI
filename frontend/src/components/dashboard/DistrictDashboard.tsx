@@ -1,12 +1,15 @@
 import React from 'react';
 import { District, OperationalTask, Reservoir } from '../../types';
-import { Building2, Waves, CheckSquare, Activity, AlertTriangle, Users } from 'lucide-react';
+import { Building2, Waves, CheckSquare, ShieldAlert, CheckCircle2, UserCheck } from 'lucide-react';
 
 interface DistrictDashboardProps {
   districtName: string;
   districtData: District | undefined;
   tasks: OperationalTask[];
   reservoirs: Reservoir[];
+  isEmergencyMode: boolean;
+  emergencyDetails: { title: string; description: string; district: string; isTakenOver: boolean; takenOverBy?: string } | null;
+  onTakeoverEmergency: () => void;
   onNavigateOperations: () => void;
 }
 
@@ -15,6 +18,9 @@ export const DistrictDashboard: React.FC<DistrictDashboardProps> = ({
   districtData,
   tasks,
   reservoirs,
+  isEmergencyMode,
+  emergencyDetails,
+  onTakeoverEmergency,
   onNavigateOperations
 }) => {
   const districtTasks = tasks.filter(t => t.districtName.toLowerCase() === districtName.toLowerCase());
@@ -23,6 +29,43 @@ export const DistrictDashboard: React.FC<DistrictDashboardProps> = ({
   return (
     <div className="space-y-6">
       
+      {/* Emergency Mode Takeover Card for District Officer */}
+      {isEmergencyMode && emergencyDetails && (
+        <div className="bg-gradient-to-r from-red-950 via-red-900 to-slate-900 rounded-3xl p-7 text-white shadow-xl border border-red-800 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse">
+          <div className="flex items-center space-x-3.5">
+            <span className="p-3 rounded-2xl bg-red-600/40 text-white">
+              <ShieldAlert className="w-8 h-8" />
+            </span>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-xl font-extrabold text-white">Emergency Response Request</h3>
+                <span className="px-2.5 py-0.5 rounded bg-red-600 text-white text-[11px] font-black uppercase">
+                  Action Required
+                </span>
+              </div>
+              <p className="text-xs text-red-200 mt-1 font-medium">
+                Secretary has declared emergency: <strong>"{emergencyDetails.title}"</strong> ({emergencyDetails.district} Zone).
+              </p>
+            </div>
+          </div>
+
+          {!emergencyDetails.isTakenOver ? (
+            <button
+              onClick={onTakeoverEmergency}
+              className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all shrink-0 flex items-center space-x-2"
+            >
+              <UserCheck className="w-5 h-5" />
+              <span>Takeover Emergency & Dispatch Field Unit</span>
+            </button>
+          ) : (
+            <div className="px-5 py-3 bg-emerald-950/80 border border-emerald-700 text-emerald-200 text-xs font-bold rounded-2xl flex items-center space-x-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <span>Taken Over by {emergencyDetails.takenOverBy}. Response sent to Secretary.</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-sky-900 via-blue-900 to-slate-900 rounded-3xl p-7 text-white shadow-xl flex justify-between items-center">
         <div>
