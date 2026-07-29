@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { User, UserRole, SystemNotification } from '../../types';
-import { ShieldAlert, Bell, Radio, LogOut, AlertTriangle, Sparkles, MessageSquare, CheckCircle2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { User, SystemNotification } from '../../types';
+import { ShieldAlert, Bell, Radio, LogOut, AlertTriangle, Sparkles, MessageSquare, CheckCircle2, X } from 'lucide-react';
 
 interface NavbarProps {
   activeUser: User;
@@ -30,8 +30,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleChat
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const unreadCount = notifications.filter(n => !n.read).length;
   const isSecretary = activeUser.role === 'state_authority' || activeUser.role === 'super_admin';
+
+  // Dismiss notification popup on click outside anywhere on the screen!
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <header className={`sticky top-0 z-40 border-b transition-colors duration-300 ${
@@ -42,18 +54,18 @@ export const Navbar: React.FC<NavbarProps> = ({
       
       {/* Global Emergency Alert Banner when Emergency Mode is Active */}
       {isEmergencyMode && emergencyDetails && (
-        <div className="bg-red-600 text-white px-6 py-2 text-xs font-extrabold flex items-center justify-between animate-pulse">
+        <div className="bg-red-600 text-white px-6 py-2.5 text-xs font-extrabold flex items-center justify-between animate-pulse">
           <div className="flex items-center space-x-2">
-            <AlertTriangle className="w-4 h-4 text-white" />
+            <AlertTriangle className="w-4 h-4 text-white shrink-0" />
             <span>STATEWIDE EMERGENCY CRISIS: <strong>{emergencyDetails.title}</strong> ({emergencyDetails.district} Zone) — "{emergencyDetails.description}"</span>
           </div>
-          <div className="text-[11px] font-mono">
+          <div className="text-[11px] font-mono shrink-0 ml-4">
             {emergencyDetails.isTakenOver ? (
-              <span className="bg-emerald-800 px-2.5 py-0.5 rounded text-emerald-100 font-bold">
+              <span className="bg-emerald-800 px-3 py-1 rounded text-emerald-100 font-bold">
                 ✓ Taken Over by {emergencyDetails.takenOverBy}
               </span>
             ) : (
-              <span className="bg-red-800 px-2.5 py-0.5 rounded text-white font-bold">
+              <span className="bg-red-800 px-3 py-1 rounded text-white font-bold">
                 Awaiting District Officer Takeover
               </span>
             )}
@@ -94,7 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Center Controls: Live Telemetry & Secretary-Only Emergency Trigger */}
+        {/* Center Controls: Live Telemetry & Secretary Emergency Trigger */}
         <div className="hidden md:flex items-center space-x-4">
           <button
             onClick={onToggleLiveSimulation}
@@ -108,7 +120,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Telemetry: <span className="font-mono font-extrabold">{isLiveSimulating ? 'LIVE 100Hz' : 'PAUSED'}</span></span>
           </button>
 
-          {/* Emergency Trigger Button Logic (Secretary Only!) */}
           {isSecretary ? (
             isEmergencyMode ? (
               <button
@@ -160,11 +171,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>Inter-Dept Chat</span>
           </button>
 
-          {/* Notifications Dropdown */}
-          <div className="relative">
+          {/* Notifications Dropdown (With Click-Outside Dismiss & Spacious UI) */}
+          <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors relative"
+              title="System Alerts"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -175,30 +187,39 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-88 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50">
-                <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Live System Alerts ({notifications.length})</h4>
+              <div className="absolute right-0 mt-3 w-[420px] max-w-[90vw] bg-white rounded-3xl shadow-2xl border border-slate-200 py-3 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="w-4 h-4 text-sky-600" />
+                    <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Live System Alerts ({notifications.length})</h4>
+                  </div>
+                  <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+
+                <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 p-2">
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
                       onClick={() => onMarkNotificationRead(notif.id)}
-                      className={`p-3.5 text-xs hover:bg-slate-50 transition-colors cursor-pointer ${
-                        !notif.read ? 'bg-sky-50/50 font-semibold' : 'text-slate-600'
+                      className={`p-4 rounded-2xl transition-all cursor-pointer space-y-1.5 ${
+                        !notif.read ? 'bg-sky-50/70 border border-sky-100' : 'hover:bg-slate-50 text-slate-600'
                       }`}
                     >
-                      <div className="flex items-start space-x-2.5">
-                        {notif.priority === 'critical' ? (
-                          <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 text-sky-500 shrink-0 mt-0.5" />
-                        )}
-                        <div>
-                          <p className="font-bold text-slate-900 leading-snug">{notif.title}</p>
-                          <p className="text-slate-500 text-xs mt-1">{notif.message}</p>
-                          <span className="text-[10px] text-slate-400 mt-1 block">{notif.timestamp}</span>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start space-x-2.5">
+                          {notif.priority === 'critical' ? (
+                            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                          ) : (
+                            <Sparkles className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+                          )}
+                          <div>
+                            <p className="font-extrabold text-slate-900 text-xs leading-snug">{notif.title}</p>
+                            <p className="text-slate-600 text-xs mt-1 leading-relaxed">{notif.message}</p>
+                          </div>
                         </div>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0 font-semibold">{notif.timestamp}</span>
                       </div>
                     </div>
                   ))}
