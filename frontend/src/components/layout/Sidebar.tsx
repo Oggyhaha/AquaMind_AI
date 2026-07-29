@@ -106,10 +106,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allowedItems = menuItems.filter(item => item.roles.includes(userRole));
 
   return (
-    <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none min-h-[calc(100vh-5rem)]">
+    <aside className="w-72 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-r border-slate-800 select-none h-[calc(100vh-5rem)] sticky top-20 overflow-y-auto">
       
       {/* Role Workspace Context */}
-      <div className="p-5 border-b border-slate-800/80 bg-slate-950/60">
+      <div className="p-5 border-b border-slate-800/80 bg-slate-950/60 shrink-0">
         <div className="text-[11px] uppercase tracking-wider font-extrabold text-slate-400 mb-1">
           Active Role Workspace
         </div>
@@ -157,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Status Box */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/60">
+      <div className="p-4 border-t border-slate-800 bg-slate-950/60 shrink-0">
         <div className="rounded-2xl bg-slate-800/80 p-3.5 border border-slate-700/60 space-y-1">
           <div className="flex items-center space-x-2 text-cyan-400 font-extrabold text-xs">
             <Sparkles className="w-4 h-4 animate-spin" />
