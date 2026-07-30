@@ -339,7 +339,13 @@ export function App() {
   }
 
   return (
-    <div className={`min-h-screen font-sans ${isEmergencyMode ? 'bg-red-950/10' : 'bg-slate-50'} text-slate-900 flex flex-col text-sm`}>
+    <div
+          className={`min-h-screen font-sans flex flex-col text-sm transition-colors duration-300 ${
+            isEmergencyMode
+              ? "bg-red-950/10 dark:bg-red-950/20"
+              : "bg-slate-50 dark:bg-slate-950"
+          } text-slate-900 dark:text-slate-100`}
+        >
       
       {/* Top Navbar */}
       <Navbar
@@ -372,13 +378,13 @@ export function App() {
           
           {/* Create Work Order Header Bar (Secretary & District Officer) */}
           {(activeUserRole === 'state_authority' || activeUserRole === 'district_officer') && (
-            <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-              <div className="text-xs font-extrabold text-slate-800">
+            <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 transition-colors">
+              <div className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
                 Logged in as <strong>{activeUser.roleTitle}</strong> • Real Cross-Tab Persistent Operational Workstation
               </div>
               <button
                 onClick={() => setIsCreateTaskModalOpen(true)}
-                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs rounded-xl shadow-sm flex items-center space-x-2"
+                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-400 text-white dark:text-slate-950 font-extrabold text-xs rounded-xl shadow-sm flex items-center space-x-2 shrink-0 transition-colors"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>+ Create New Work Order</span>
@@ -434,30 +440,30 @@ export function App() {
                     /* STATE AUTHORITY / DEFAULT DASHBOARD */
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-                          <span className="text-xs uppercase font-extrabold text-slate-400">Water Health Index</span>
-                          <div className="text-3xl font-black text-slate-900">74 <span className="text-xs font-bold text-slate-400">/ 100</span></div>
-                          <span className="text-xs text-emerald-600 font-bold">↑ +2.4% vs last week (Moderate)</span>
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
+                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Water Health Index</span>
+                          <div className="text-3xl font-black text-slate-900 dark:text-slate-100">74 <span className="text-xs font-bold text-slate-400 dark:text-slate-500">/ 100</span></div>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">↑ +2.4% vs last week (Moderate)</span>
                         </div>
 
-                        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-                          <span className="text-xs uppercase font-extrabold text-slate-400">AI Confidence Score</span>
-                          <div className="text-3xl font-black text-sky-900">95.4%</div>
-                          <span className="text-xs text-slate-500 font-semibold">4 Agents Active (LangGraph)</span>
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
+                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">AI Confidence Score</span>
+                          <div className="text-3xl font-black text-sky-900 dark:text-sky-400">95.4%</div>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">4 Agents Active (LangGraph)</span>
                         </div>
 
-                        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-                          <span className="text-xs uppercase font-extrabold text-slate-400">Verified Water Saved</span>
-                          <div className="text-3xl font-black text-emerald-700">
-                            {(totalWaterSaved / 1000000).toFixed(1)} M <span className="text-xs font-bold text-slate-500">Liters</span>
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
+                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Verified Water Saved</span>
+                          <div className="text-3xl font-black text-emerald-700 dark:text-emerald-400">
+                            {(totalWaterSaved / 1000000).toFixed(1)} M <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Liters</span>
                           </div>
-                          <span className="text-xs text-emerald-600 font-bold">Verified by Field Engineers</span>
+                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Verified by Field Engineers</span>
                         </div>
 
-                        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-                          <span className="text-xs uppercase font-extrabold text-slate-400">Active Tasks</span>
-                          <div className="text-3xl font-black text-slate-900">{tasks.length}</div>
-                          <span className="text-xs text-amber-600 font-bold">{pendingApprovalsCount} Approvals Pending</span>
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
+                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Active Tasks</span>
+                          <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{tasks.length}</div>
+                          <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">{pendingApprovalsCount} Approvals Pending</span>
                         </div>
                       </div>
 
@@ -560,7 +566,7 @@ export function App() {
 
       <button
         onClick={() => setIsAIChatOpen(true)}
-        className="fixed bottom-8 right-8 p-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white shadow-2xl shadow-sky-500/40 z-40 flex items-center space-x-3 transform hover:scale-105 active:scale-95 transition-all"
+        className="fixed bottom-8 right-8 p-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 dark:from-sky-400 dark:to-blue-500 dark:hover:from-sky-300 dark:hover:to-blue-400 text-white shadow-2xl shadow-sky-500/40 dark:shadow-sky-900/50 z-40 flex items-center space-x-3 transform hover:scale-105 active:scale-95 transition-all"
         title="Open Role-Adapted AI Assistant"
       >
         <Sparkles className="w-6 h-6 animate-spin" />
