@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { District, Reservoir, RiskLevel } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import { Compass, Search, Layers, MapPin } from 'lucide-react';
+import { Compass, Search, Layers, MapPin, AlertTriangle, ShieldCheck } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 interface GujaratMapProps {
   districts: District[];
@@ -17,6 +19,11 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
   onSelectDistrict
 }) => {
   const { isDark } = useTheme();
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markersGroupRef = useRef<L.LayerGroup | null>(null);
+
   const [filterRisk, setFilterRisk] = useState<string>('all');
   const [showReservoirs, setShowReservoirs] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -29,35 +36,214 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
 
   const getRiskBadge = (level: RiskLevel) => {
     switch (level) {
-      case 'critical': return <span className="px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 text-xs font-extrabold">CRITICAL STRESS</span>;
-      case 'high': return <span className="px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-extrabold">HIGH RISK</span>;
-      case 'moderate': return <span className="px-2.5 py-1 rounded-md bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 text-xs font-extrabold">MODERATE</span>;
-      case 'safe': return <span className="px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold">OPTIMAL</span>;
+      case 'critical':
+        return <span className="px-2.5 py-1 rounded-md bg-red-100 dark:bg-red-950/70 text-red-800 dark:text-red-300 text-xs font-extrabold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> CRITICAL STRESS</span>;
+      case 'high':
+        return <span className="px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-xs font-extrabold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> HIGH RISK</span>;
+      case 'moderate':
+        return <span className="px-2.5 py-1 rounded-md bg-sky-100 dark:bg-sky-950/70 text-sky-800 dark:text-sky-300 text-xs font-extrabold">MODERATE</span>;
+      case 'safe':
+        return <span className="px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> OPTIMAL</span>;
     }
   };
 
-  const reservoirPositions: Record<string, { x: number; y: number; labelDx: number; labelDy: number }> = {
-    'res_sardar_sarovar': { x: 800, y: 430, labelDx: 15, labelDy: 5 },
-    'res_ukai': { x: 770, y: 525, labelDx: 15, labelDy: 5 },
-    'res_dharoi': { x: 670, y: 150, labelDx: 15, labelDy: -5 },
-    'res_kadana': { x: 810, y: 240, labelDx: 15, labelDy: 5 },
-    'res_shetrunji': { x: 550, y: 495, labelDx: -110, labelDy: 18 },
-    'res_aaji': { x: 410, y: 385, labelDx: -100, labelDy: 18 }
+  const getRiskColorHex = (level: RiskLevel) => {
+    switch (level) {
+      case 'critical': return '#ef4444';
+      case 'high': return '#f59e0b';
+      case 'moderate': return '#0ea5e9';
+      case 'safe': return '#10b981';
+    }
   };
 
-  // Theme-aware SVG colors
-  const svgTextFill = isDark ? '#e2e8f0' : '#0f172a';
-  const svgSubTextFill = isDark ? '#94a3b8' : '#64748b';
-  const canalStroke = isDark ? '#38bdf8' : '#0284c7';
-  const canalTextFill = isDark ? '#7dd3fc' : '#0369a1';
-  const reservoirPillBg = isDark ? '#1e293b' : '#ffffff';
-  const reservoirPillStroke = isDark ? '#38bdf8' : '#0284c7';
-  const reservoirPillText = isDark ? '#7dd3fc' : '#075985';
+  // Initialize Leaflet Map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+    if (leafletMapRef.current) return;
+
+    // Center on Gujarat state (Lat ~22.3°N, Lng ~71.8°E)
+    const map = L.map(mapContainerRef.current, {
+      center: [22.35, 71.65],
+      zoom: 7.2,
+      zoomControl: true,
+      attributionControl: false
+    });
+
+    leafletMapRef.current = map;
+    markersGroupRef.current = L.layerGroup().addTo(map);
+
+    return () => {
+      map.remove();
+      leafletMapRef.current = null;
+    };
+  }, []);
+
+  // Synchronize Tile Layer with Theme (CartoDB Light / Dark Matter)
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map) return;
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+
+    const tileUrl = isDark
+      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+      : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+
+    const newTileLayer = L.tileLayer(tileUrl, {
+      maxZoom: 18,
+      subdomains: 'abcd'
+    }).addTo(map);
+
+    tileLayerRef.current = newTileLayer;
+  }, [isDark]);
+
+  // Synchronize Markers & Features on Map
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    const markersGroup = markersGroupRef.current;
+    if (!map || !markersGroup) return;
+
+    markersGroup.clearLayers();
+
+    // 1. Draw Narmada Canal Feeder Line
+    const canalCoords: [number, number][] = [
+      [21.83, 73.75], // Sardar Sarovar Dam
+      [22.30, 73.18], // Vadodara
+      [23.02, 72.57], // Ahmedabad
+      [23.21, 72.63], // Gandhinagar
+      [23.58, 72.36], // Mehsana
+      [23.24, 69.66]  // Kachchh Feeder
+    ];
+
+    L.polyline(canalCoords, {
+      color: isDark ? '#38bdf8' : '#0284c7',
+      weight: 3,
+      dashArray: '6, 6',
+      opacity: 0.85
+    }).addTo(markersGroup);
+
+    // 2. Add District Nodes
+    filteredDistricts.forEach((d) => {
+      const isSelected = selectedDistrict?.id === d.id;
+      const colorHex = getRiskColorHex(d.riskLevel);
+
+      const customIcon = L.divIcon({
+        className: 'custom-district-marker',
+        html: `
+          <div style="position: relative; display: flex; flex-direction: column; align-items: center; cursor: pointer;">
+            ${isSelected ? `
+              <div style="
+                position: absolute;
+                top: -6px; left: -6px; right: -6px; bottom: -6px;
+                border: 3px solid #0ea5e9;
+                border-radius: 50%;
+                box-shadow: 0 0 12px #0ea5e9;
+              "></div>
+            ` : ''}
+            <div style="
+              width: ${isSelected ? '22px' : '18px'};
+              height: ${isSelected ? '22px' : '18px'};
+              background-color: ${colorHex};
+              border: 2.5px solid #ffffff;
+              border-radius: 50%;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              transition: all 0.2s ease;
+              position: relative;
+            ">
+              ${d.activeAlertsCount > 0 ? `
+                <span style="
+                  position: absolute;
+                  top: -6px;
+                  right: -6px;
+                  background-color: #dc2626;
+                  color: #ffffff;
+                  font-size: 9px;
+                  font-weight: 800;
+                  width: 14px;
+                  height: 14px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  border: 1px solid #ffffff;
+                ">${d.activeAlertsCount}</span>
+              ` : ''}
+            </div>
+            <div style="
+              margin-top: 4px;
+              background-color: ${isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)'};
+              color: ${isDark ? '#f8fafc' : '#0f172a'};
+              padding: 2px 6px;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: ${isSelected ? '800' : '700'};
+              border: 1px solid ${isDark ? '#334155' : '#cbd5e1'};
+              white-space: nowrap;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+            ">${d.name}</div>
+          </div>
+        `,
+        iconSize: [60, 40],
+        iconAnchor: [30, 10]
+      });
+
+      const marker = L.marker([d.lat, d.lng], { icon: customIcon }).addTo(markersGroup);
+
+      marker.on('click', () => {
+        onSelectDistrict(isSelected ? null : d);
+      });
+    });
+
+    // 3. Add Major Reservoirs Layer
+    if (showReservoirs) {
+      const reservoirCoords: Record<string, [number, number]> = {
+        'res_sardar_sarovar': [21.83, 73.75],
+        'res_ukai': [21.25, 73.58],
+        'res_dharoi': [24.00, 72.85],
+        'res_kadana': [23.31, 73.83],
+        'res_shetrunji': [21.52, 71.98],
+        'res_aaji': [22.25, 70.85]
+      };
+
+      reservoirs.forEach((res) => {
+        const coords = reservoirCoords[res.id];
+        if (!coords) return;
+
+        const resIcon = L.divIcon({
+          className: 'custom-reservoir-marker',
+          html: `
+            <div style="
+              background-color: ${isDark ? '#1e293b' : '#ffffff'};
+              color: ${isDark ? '#38bdf8' : '#0369a1'};
+              border: 1.5px solid ${isDark ? '#38bdf8' : '#0284c7'};
+              padding: 3px 8px;
+              border-radius: 8px;
+              font-size: 10px;
+              font-weight: 800;
+              white-space: nowrap;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+            ">
+              <span>💧 ${res.name} (${res.fillPercentage}%)</span>
+            </div>
+          `,
+          iconSize: [120, 24],
+          iconAnchor: [60, 12]
+        });
+
+        L.marker(coords, { icon: resIcon }).addTo(markersGroup);
+      });
+    }
+  }, [filteredDistricts, reservoirs, selectedDistrict, isDark, showReservoirs]);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700/70 shadow-sm p-6 space-y-5 transition-colors duration-300">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5 transition-colors duration-300">
       
-      {/* Header Controls */}
+      {/* Map Header Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
         <div>
           <div className="flex items-center space-x-2">
@@ -65,12 +251,12 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
             <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">Interactive Gujarat GIS Command Map</h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            Real-time water stress levels, canal flows, and major reservoirs across all 33 districts of Gujarat
+            Real-time OpenStreetMap/GIS hydrology telemetry across Gujarat State
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* Search Input */}
+          {/* Search Bar */}
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <input
@@ -99,201 +285,94 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
             ))}
           </div>
 
-          {/* Reservoirs Layer Toggle */}
+          {/* Toggle Reservoirs Layer */}
           <button
             onClick={() => setShowReservoirs(!showReservoirs)}
-            className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+            className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
               showReservoirs
                 ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700'
                 : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
             }`}
           >
-            <Layers className="w-4 h-4" />
+            <Layers className="w-3.5 h-3.5" />
             <span>Reservoirs Layer</span>
           </button>
         </div>
       </div>
 
-      {/* Main Map View & Inspector Sidepanel */}
+      {/* Main Grid Viewport */}
       <div className="grid lg:grid-cols-12 gap-6 items-start">
         
-        {/* SVG Canvas Container */}
-        <div className="lg:col-span-8 relative bg-gradient-to-b from-sky-50/70 via-slate-50 to-blue-50/50 dark:from-slate-800/50 dark:via-slate-900 dark:to-sky-950/30 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 overflow-hidden flex flex-col justify-between min-h-[520px] transition-colors duration-300">
+        {/* Real Leaflet Map Container */}
+        <div className="lg:col-span-8 relative rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[540px] transition-colors duration-300 shadow-inner">
           
           {/* Map Legend */}
-          <div className="absolute top-4 left-4 z-10 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-md text-xs space-y-1.5 transition-colors">
-            <div className="font-extrabold text-slate-900 dark:text-white mb-1">Gujarat Water Stress Heatmap</div>
+          <div className="absolute top-4 left-4 z-[400] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md text-xs space-y-1.5 transition-colors">
+            <div className="font-extrabold text-slate-900 dark:text-white mb-1">Gujarat Water Stress GIS Legend</div>
             <div className="flex items-center space-x-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-red-500 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-red-500 inline-block shadow-xs"></span>
               <span className="text-slate-700 dark:text-slate-300 font-medium">Critical Stress (&lt;40% supply)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-amber-500 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-xs"></span>
               <span className="text-slate-700 dark:text-slate-300 font-medium">High Risk (Deficit)</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-sky-500 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-sky-500 inline-block shadow-xs"></span>
               <span className="text-slate-700 dark:text-slate-300 font-medium">Moderate Balance</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block shadow-xs"></span>
               <span className="text-slate-700 dark:text-slate-300 font-medium">Optimal Surplus</span>
             </div>
           </div>
 
-          {/* SVG Viewport */}
-          <div className="w-full h-full min-h-[480px] relative flex items-center justify-center pt-4">
-            <svg viewBox="0 0 1000 700" className="w-full h-auto max-h-[560px] drop-shadow-md select-none">
-              
-              {/* Gujarat State Boundary Outline */}
-              <defs>
-                <linearGradient id="boundaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor={isDark ? '#0c4a6e' : '#bae6fd'} stopOpacity="0.3" />
-                  <stop offset="100%" stopColor={isDark ? '#164e63' : '#a5f3fc'} stopOpacity="0.15" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M 130 80 L 180 55 L 240 45 L 310 50 L 380 40 L 450 55 L 530 60 L 600 55 L 660 50 L 720 55 L 780 70 L 830 85 L 870 110 L 890 150 L 900 200 L 895 250 L 880 300 L 870 350 L 860 400 L 855 440 L 860 470 L 870 510 L 875 550 L 865 590 L 840 620 L 800 635 L 750 640 L 700 630 L 660 615 L 620 600 L 580 590 L 540 585 L 500 590 L 460 600 L 420 610 L 380 605 L 340 595 L 310 580 L 280 560 L 250 540 L 230 520 L 210 490 L 195 460 L 180 430 L 165 400 L 150 360 L 140 320 L 135 280 L 130 240 L 125 200 L 120 160 L 125 120 Z"
-                fill="url(#boundaryGradient)"
-                stroke={isDark ? '#1e3a5f' : '#7dd3fc'}
-                strokeWidth="2"
-                strokeDasharray="6 3"
-                opacity="0.6"
-              />
-              {/* State label */}
-              <text x="490" y="660" textAnchor="middle" fill={isDark ? '#475569' : '#94a3b8'} fontSize="14" fontWeight="bold" letterSpacing="4" opacity="0.5">
-                GUJARAT
-              </text>
-              {/* Narmada Main Canal Feeder Line */}
-              <path
-                d="M 800 430 Q 720 370 650 260 T 410 380 T 210 240"
-                fill="none"
-                stroke={canalStroke}
-                strokeWidth="4"
-                strokeDasharray="7 5"
-                className="animate-pulse"
-              />
-              <text x="520" y="270" fill={canalTextFill} fontSize="13" fontWeight="extrabold">
-                Narmada Main Canal Feeder
-              </text>
+          {/* Leaflet DOM Mounting Container */}
+          <div ref={mapContainerRef} className="w-full h-[540px] z-0" />
 
-              {/* RENDER FILTERED DISTRICT NODES */}
-              {filteredDistricts.map((d) => {
-                const x = ((d.lng - 68.5) / (74.5 - 68.5)) * 840 + 80;
-                const y = 620 - ((d.lat - 20.2) / (24.5 - 20.2)) * 540;
-                const isSelected = selectedDistrict?.id === d.id;
-
-                return (
-                  <g key={d.id} onClick={() => onSelectDistrict(d)} className="cursor-pointer group">
-                    {isSelected && (
-                      <circle cx={x} cy={y} r="28" fill="none" stroke="#0ea5e9" strokeWidth="3" className="animate-ping" />
-                    )}
-
-                    <circle
-                      cx={x} cy={y}
-                      r={isSelected ? "18" : "14"}
-                      className={`transition-all duration-300 ${
-                        d.riskLevel === 'critical' ? 'fill-red-500 stroke-red-700' :
-                        d.riskLevel === 'high' ? 'fill-amber-500 stroke-amber-700' :
-                        d.riskLevel === 'moderate' ? 'fill-sky-500 stroke-sky-700' :
-                        'fill-emerald-500 stroke-emerald-700'
-                      } stroke-2 ${isSelected ? 'stroke-4 shadow-lg' : 'hover:scale-125'}`}
-                    />
-
-                    <text
-                      x={x} y={y + 24}
-                      textAnchor="middle"
-                      fill={svgTextFill}
-                      className={`text-xs font-bold pointer-events-none ${isSelected ? 'font-black text-sm' : ''}`}
-                    >
-                      {d.name}
-                    </text>
-
-                    {d.activeAlertsCount > 0 && (
-                      <g transform={`translate(${x + 8}, ${y - 12})`}>
-                        <circle r="9" fill="#dc2626" />
-                        <text x="0" y="3.5" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">
-                          {d.activeAlertsCount}
-                        </text>
-                      </g>
-                    )}
-                  </g>
-                );
-              })}
-
-              {/* Major Reservoirs Pin Layer */}
-              {showReservoirs && reservoirs.map((res) => {
-                const pos = reservoirPositions[res.id] || { x: 500, y: 350, labelDx: 15, labelDy: 5 };
-                return (
-                  <g key={res.id} transform={`translate(${pos.x}, ${pos.y})`} className="cursor-pointer">
-                    <circle r="9" fill="#0284c7" stroke="#ffffff" strokeWidth="2" className="animate-pulse" />
-                    <g transform={`translate(${pos.labelDx}, ${pos.labelDy})`}>
-                      <rect
-                        x="-4" y="-12"
-                        width={res.name.length * 7.5 + 45}
-                        height="20" rx="6"
-                        fill={reservoirPillBg}
-                        stroke={reservoirPillStroke}
-                        strokeWidth="1.5"
-                        className="drop-shadow-xs"
-                      />
-                      <text x="4" y="2" fill={reservoirPillText} fontSize="11" fontWeight="extrabold">
-                        💧 {res.name} ({res.fillPercentage}%)
-                      </text>
-                    </g>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
-
-          <div className="flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200/80 dark:border-slate-700/60 font-medium">
-            <span>Showing {filteredDistricts.length} of {districts.length} Gujarat Districts</span>
-            <span>Grid Bounds: 20.2°N – 24.5°N | 68.5°E – 74.5°E</span>
-          </div>
         </div>
 
-        {/* Selected District Inspector Panel */}
-        <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 space-y-4 transition-colors">
+        {/* Selected District Inspector Sidepanel */}
+        <div className="lg:col-span-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 space-y-4 transition-colors">
           {selectedDistrict ? (
-            <div className="space-y-4 animate-in fade-in">
+            <div className="space-y-4 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xl font-bold text-slate-900 dark:text-white">{selectedDistrict.name} District</h4>
+                  <h4 className="text-xl font-extrabold text-slate-900 dark:text-white">{selectedDistrict.name} District</h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{selectedDistrict.region} Region</p>
                 </div>
                 {getRiskBadge(selectedDistrict.riskLevel)}
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
                   <span className="text-slate-400 dark:text-slate-500 text-[11px] uppercase font-bold block">Water Demand</span>
                   <span className="font-extrabold text-slate-900 dark:text-white text-base">{selectedDistrict.waterDemandMLD} MLD</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
                   <span className="text-slate-400 dark:text-slate-500 text-[11px] uppercase font-bold block">Current Supply</span>
                   <span className={`font-extrabold text-base ${selectedDistrict.waterSupplyMLD < selectedDistrict.waterDemandMLD ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     {selectedDistrict.waterSupplyMLD} MLD
                   </span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <span className="text-slate-400 dark:text-slate-500 text-[11px] uppercase font-bold block">Groundwater Level</span>
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
+                  <span className="text-slate-400 dark:text-slate-500 text-[11px] uppercase font-bold block">Groundwater Depth</span>
                   <span className="font-extrabold text-slate-900 dark:text-white text-base">{selectedDistrict.groundwaterLevelM} m</span>
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700/80">
                   <span className="text-slate-400 dark:text-slate-500 text-[11px] uppercase font-bold block">Population Impact</span>
                   <span className="font-extrabold text-slate-900 dark:text-white text-base">{(selectedDistrict.population / 1000000).toFixed(2)} M</span>
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 space-y-2">
                 <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                  <span>Supply-Demand Balance</span>
-                  <span>{Math.round((selectedDistrict.waterSupplyMLD / selectedDistrict.waterDemandMLD) * 100)}% Fulfilled</span>
+                  <span>Supply-Demand Gap Fulfillment</span>
+                  <span>{Math.round((selectedDistrict.waterSupplyMLD / selectedDistrict.waterDemandMLD) * 100)}%</span>
                 </div>
                 <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${
+                    className={`h-full rounded-full transition-all duration-500 ${
                       selectedDistrict.waterSupplyMLD < selectedDistrict.waterDemandMLD ? 'bg-amber-500' : 'bg-emerald-500'
                     }`}
                     style={{ width: `${Math.min(100, (selectedDistrict.waterSupplyMLD / selectedDistrict.waterDemandMLD) * 100)}%` }}
@@ -303,15 +382,15 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
 
               <button
                 onClick={() => onSelectDistrict(null)}
-                className="w-full py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors"
+                className="w-full py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition-colors shadow-xs"
               >
-                Reset Map Selection
+                Clear Selected District
               </button>
             </div>
           ) : (
             <div className="text-center py-16 text-slate-400 dark:text-slate-500 space-y-3">
               <MapPin className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600" />
-              <p className="text-xs font-medium">Click on any district node on the map to inspect real-time water health metrics.</p>
+              <p className="text-xs font-medium">Click on any district node on the GIS map to inspect live hydrological metrics.</p>
             </div>
           )}
         </div>
