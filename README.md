@@ -1,10 +1,19 @@
 # 🌊 AquaMind AI — Autonomous Water Intelligence & Operations OS
 > **Enterprise Decision Support & Closed-Loop Operations Command Center for Government of Gujarat Water Resources Department**
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-aqua--mind--ai--nine.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://aqua-mind-ai-nine.vercel.app/)
 [![Tech Stack](https://img.shields.io/badge/Frontend-React%2019%20%7C%20TypeScript%20%7C%20Tailwind-0ea5e9?style=for-the-badge)](https://react.dev)
 [![Backend](https://img.shields.io/badge/Backend-FastAPI%20%7C%20Python%20%7C%20PostgreSQL-3b82f6?style=for-the-badge)](https://fastapi.tiangolo.com)
 [![GIS Engine](https://img.shields.io/badge/GIS-Leaflet%20%7C%20OpenStreetMap%20%7C%20CartoDB-10b981?style=for-the-badge)](https://leafletjs.com)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Groq%20Llama--3.3%2070B%20%7C%20OpenAI%20GPT--4o-8b5cf6?style=for-the-badge)](https://groq.com)
+
+---
+
+## 🌐 Live Application & Demo Link
+
+> **Live Production URL**: [https://aqua-mind-ai-nine.vercel.app/](https://aqua-mind-ai-nine.vercel.app/)
+
+The application is deployed live on Vercel and runs completely self-contained in the browser using HTML5 `localStorage` and `BroadcastChannel` real-time state synchronization across all 6 pre-seeded demo role workstations.
 
 ---
 
