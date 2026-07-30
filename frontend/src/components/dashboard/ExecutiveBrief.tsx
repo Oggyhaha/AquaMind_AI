@@ -76,18 +76,18 @@ export const ExecutiveBrief: React.FC<ExecutiveBriefProps> = ({
   const brief = getBriefContent();
 
   return (
-    <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 p-8 text-white shadow-xl border border-sky-800/40 relative overflow-hidden mb-6">
+    <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 dark:from-[#0a0f1a] dark:via-sky-950 dark:to-blue-950 p-8 text-white shadow-xl dark:shadow-none border border-sky-800/40 dark:border-slate-800 relative overflow-hidden mb-6">
       <div className="absolute -top-12 -right-12 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-12 -left-12 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="space-y-4 max-w-4xl">
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-2.5 flex-wrap gap-y-2">
             <span className="flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-xs font-extrabold uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-cyan-400" />
               <span>{brief.badge}</span>
             </span>
-            <span className="text-xs text-slate-400 font-medium">• Updated 5 mins ago</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">• Updated 5 mins ago</span>
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
@@ -96,7 +96,7 @@ export const ExecutiveBrief: React.FC<ExecutiveBriefProps> = ({
 
           <ul className="grid sm:grid-cols-2 gap-3 text-xs text-slate-200 font-medium">
             {brief.points.map((point, i) => (
-              <li key={i} className="flex items-start space-x-2.5 bg-white/5 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+              <li key={i} className="flex items-start space-x-2.5 bg-white/5 dark:bg-white/[0.03] backdrop-blur-md p-3 rounded-2xl border border-white/10 dark:border-white/5 hover:bg-white/10 dark:hover:bg-white/[0.06] transition-colors duration-200">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                 <span>{point}</span>
               </li>
@@ -107,7 +107,7 @@ export const ExecutiveBrief: React.FC<ExecutiveBriefProps> = ({
         <div className="shrink-0">
           <button
             onClick={onNavigateOperations}
-            className="flex items-center space-x-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/25 transition-all transform hover:scale-105 active:scale-95"
+            className="flex items-center space-x-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-sky-500 hover:from-cyan-300 hover:to-sky-400 dark:from-cyan-400 dark:to-sky-500 dark:hover:from-cyan-300 dark:hover:to-sky-400 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/25 dark:shadow-cyan-500/20 transition-all duration-200 transform hover:scale-105 active:scale-95"
           >
             <span>{brief.actionLabel}</span>
             <ArrowRight className="w-4 h-4" />

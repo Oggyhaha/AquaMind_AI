@@ -165,42 +165,42 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-white shadow-2xl border-l border-slate-200 z-50 flex flex-col animate-in slide-in-from-right duration-300">
-      
-      <div className="p-5 bg-gradient-to-r from-slate-900 via-sky-950 to-blue-900 text-white flex items-center justify-between shadow-md">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
-            <Sparkles className="w-5 h-5 animate-spin" />
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[460px] bg-white dark:bg-slate-950 shadow-2xl border-l border-slate-200 dark:border-slate-800 z-50 flex flex-col animate-in slide-in-from-right duration-300">
+
+      <div className="p-4 sm:p-5 bg-gradient-to-r from-slate-900 to-sky-900 dark:from-slate-950 dark:to-slate-900 text-white flex items-center justify-between shadow-md border-b border-slate-800">
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/30 flex items-center justify-center text-sky-300 shrink-0">
+            <Sparkles className="w-5 h-5" />
           </div>
-          <div>
-            <h3 className="text-sm font-extrabold">AquaMind LLM Assistant</h3>
-            <p className="text-[11px] text-cyan-300 font-mono font-bold">Role: {userRole.replace('_', ' ').toUpperCase()}</p>
+          <div className="min-w-0">
+            <h3 className="text-sm font-extrabold truncate">AquaMind LLM Assistant</h3>
+            <p className="text-[11px] text-sky-300 font-mono font-bold truncate">Role: {userRole.replace('_', ' ').toUpperCase()}</p>
           </div>
         </div>
 
-        <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 hover:text-white">
-          <X className="w-6 h-6" />
+        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 text-slate-300 hover:text-white transition-colors shrink-0">
+          <X className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50">
+      <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 bg-slate-50 dark:bg-slate-950">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] rounded-3xl p-4 text-xs shadow-xs space-y-1.5 ${
+            <div className={`max-w-[85%] rounded-2xl p-4 text-xs shadow-sm space-y-1.5 ${
               msg.sender === 'user'
-                ? 'bg-sky-600 text-white rounded-br-none'
-                : 'bg-white border border-slate-200 text-slate-900 rounded-bl-none'
+                ? 'bg-sky-600 text-white rounded-br-md'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-md'
             }`}>
               {msg.roleBadge && (
-                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-900 font-bold uppercase tracking-wider block w-max">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-500/10 text-cyan-900 dark:text-cyan-300 font-bold uppercase tracking-wider block w-max">
                   {msg.roleBadge}
                 </span>
               )}
               <p className="leading-relaxed font-medium">{msg.text}</p>
-              <span className={`text-[10px] block text-right font-mono font-bold ${msg.sender === 'user' ? 'text-sky-200' : 'text-slate-400'}`}>
+              <span className={`text-[10px] block text-right font-mono font-bold ${msg.sender === 'user' ? 'text-sky-200' : 'text-slate-400 dark:text-slate-500'}`}>
                 {msg.timestamp}
               </span>
             </div>
@@ -209,8 +209,8 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
 
         {isTyping && (
           <div className="flex justify-start">
-            <div className="bg-white border border-slate-200 rounded-3xl p-3.5 text-xs text-slate-500 flex items-center space-x-2.5 font-bold">
-              <Bot className="w-5 h-5 text-cyan-600 animate-spin" />
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 text-xs text-slate-500 dark:text-slate-400 flex items-center space-x-2.5 font-bold">
+              <Bot className="w-4.5 h-4.5 text-sky-600 dark:text-sky-400 animate-pulse" />
               <span>Querying Groq / OpenAI LLM & Qdrant Policy DB...</span>
             </div>
           </div>
@@ -219,17 +219,17 @@ export const AIChatDrawer: React.FC<AIChatDrawerProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-200 flex items-center space-x-2.5">
+      <form onSubmit={handleSend} className="p-3.5 sm:p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center space-x-2.5">
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           placeholder={`Ask AI as ${userRole.replace('_', ' ')}...`}
-          className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:outline-none"
+          className="flex-1 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl text-xs font-medium focus:ring-2 focus:ring-sky-500 focus:border-sky-500 focus:outline-none transition-colors"
         />
         <button
           type="submit"
-          className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl shadow-md transition-all shrink-0"
+          className="p-3 bg-sky-600 hover:bg-sky-700 text-white rounded-xl shadow-sm transition-colors shrink-0"
         >
           <Send className="w-5 h-5" />
         </button>
