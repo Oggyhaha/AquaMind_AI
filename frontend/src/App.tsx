@@ -33,10 +33,15 @@ import { AdminPanel } from './components/admin/AdminPanel';
 import { ReportsView } from './components/reports/ReportsView';
 import { ReservoirsView } from './components/views/ReservoirsView';
 import { PipelinesView } from './components/views/PipelinesView';
+import { SplashScreen } from './components/ui/SplashScreen';
+import { ToastProvider } from './components/ui/Toast';
+import { AnimatedKPI } from './components/ui/AnimatedKPI';
+import { PrintDashboard } from './components/ui/PrintDashboard';
 
-import { Sparkles, PlusCircle } from 'lucide-react';
+import { Sparkles, PlusCircle, Droplets, Brain, Gauge, ClipboardList } from 'lucide-react';
 
 export function App() {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeUserRole, setActiveUserRole] = useState<UserRole>('state_authority');
   const [authToken, setAuthToken] = useState<string>('');
@@ -339,6 +344,7 @@ export function App() {
   }
 
   return (
+    <ToastProvider>
     <div
           className={`min-h-screen font-sans flex flex-col text-sm transition-colors duration-300 ${
             isEmergencyMode
@@ -346,6 +352,7 @@ export function App() {
               : "bg-slate-50 dark:bg-slate-950"
           } text-slate-900 dark:text-slate-100`}
         >
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       
       {/* Top Navbar */}
       <Navbar
@@ -439,32 +446,52 @@ export function App() {
                   ) : (
                     /* STATE AUTHORITY / DEFAULT DASHBOARD */
                     <div className="space-y-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Statewide KPIs — Live</span>
+                        <PrintDashboard
+                          districts={districts}
+                          totalWaterSaved={totalWaterSaved}
+                          tasksCount={tasks.length}
+                        />
+                      </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
-                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Water Health Index</span>
-                          <div className="text-3xl font-black text-slate-900 dark:text-slate-100">74 <span className="text-xs font-bold text-slate-400 dark:text-slate-500">/ 100</span></div>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">↑ +2.4% vs last week (Moderate)</span>
-                        </div>
-
-                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
-                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">AI Confidence Score</span>
-                          <div className="text-3xl font-black text-sky-900 dark:text-sky-400">95.4%</div>
-                          <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">4 Agents Active (LangGraph)</span>
-                        </div>
-
-                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
-                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Verified Water Saved</span>
-                          <div className="text-3xl font-black text-emerald-700 dark:text-emerald-400">
-                            {(totalWaterSaved / 1000000).toFixed(1)} M <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Liters</span>
-                          </div>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">Verified by Field Engineers</span>
-                        </div>
-
-                        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-black/20 space-y-1 transition-colors">
-                          <span className="text-xs uppercase font-extrabold text-slate-400 dark:text-slate-500">Active Tasks</span>
-                          <div className="text-3xl font-black text-slate-900 dark:text-slate-100">{tasks.length}</div>
-                          <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">{pendingApprovalsCount} Approvals Pending</span>
-                        </div>
+                        <AnimatedKPI
+                          label="Water Health Index"
+                          value={74}
+                          suffix=" / 100"
+                          trend="+2.4% vs last week"
+                          trendPositive={true}
+                          icon={<Gauge className="w-5 h-5 text-sky-500" />}
+                          sparklineData={[68, 70, 69, 72, 71, 73, 74]}
+                        />
+                        <AnimatedKPI
+                          label="AI Confidence Score"
+                          value={95.4}
+                          decimals={1}
+                          suffix="%"
+                          trend="4 Agents Active (LangGraph)"
+                          trendPositive={true}
+                          icon={<Brain className="w-5 h-5 text-violet-500" />}
+                          sparklineData={[91, 92.5, 93, 94.1, 94.8, 95, 95.4]}
+                        />
+                        <AnimatedKPI
+                          label="Verified Water Saved"
+                          value={parseFloat((totalWaterSaved / 1000000).toFixed(1))}
+                          decimals={1}
+                          suffix=" M L"
+                          trend="Verified by Field Engineers"
+                          trendPositive={true}
+                          icon={<Droplets className="w-5 h-5 text-cyan-500" />}
+                          sparklineData={[4.2, 4.8, 5.1, 5.5, 5.7, 5.9, parseFloat((totalWaterSaved / 1000000).toFixed(1))]}
+                        />
+                        <AnimatedKPI
+                          label="Active Tasks"
+                          value={tasks.length}
+                          trend={`${pendingApprovalsCount} Approvals Pending`}
+                          trendPositive={false}
+                          icon={<ClipboardList className="w-5 h-5 text-amber-500" />}
+                          sparklineData={[3, 5, 4, 6, 5, 7, tasks.length]}
+                        />
                       </div>
 
                       {/* Gujarat GIS Map */}
@@ -581,6 +608,7 @@ export function App() {
       />
 
     </div>
+    </ToastProvider>
   );
 }
 
