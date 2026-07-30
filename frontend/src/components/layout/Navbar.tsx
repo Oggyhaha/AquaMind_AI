@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, SystemNotification } from '../../types';
 import { ShieldAlert, Bell, Radio, LogOut, AlertTriangle, Sparkles, MessageSquare, CheckCircle2, X, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
 
 interface NavbarProps {
   activeUser: User;
@@ -15,8 +16,6 @@ interface NavbarProps {
   onMarkNotificationRead: (id: string) => void;
   onToggleChat: () => void;
 }
-
-const THEME_KEY = 'aquamind_theme_preference';
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeUser,
@@ -36,33 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const unreadCount = notifications.filter(n => !n.read).length;
   const isSecretary = activeUser.role === 'state_authority' || activeUser.role === 'super_admin';
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(THEME_KEY);
-      if (stored) return stored === 'dark';
-      return document.documentElement.classList.contains('dark') ||
-        (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    } catch (e) {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    console.log("isDarkMode:", isDarkMode);
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    try {
-      localStorage.setItem(THEME_KEY, isDarkMode ? 'dark' : 'light');
-    } catch (e) {}
-  }, [isDarkMode]);
-const toggleTheme = () => {
-  console.log("Theme button clicked");
-  setIsDarkMode(prev => !prev);
-};
+  const { isDark: isDarkMode, toggleTheme } = useTheme();
   
 
   // Dismiss notification popup on click outside anywhere on the screen!
@@ -109,12 +82,10 @@ const toggleTheme = () => {
         {/* Left Brand */}
         <div className="flex items-center space-x-4">
           <div className="relative">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-extrabold text-2xl shadow-md transition-transform hover:scale-105 ${
-              isEmergencyMode
-                ? 'bg-red-600 text-white animate-pulse'
-                : 'bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-700 text-white'
+            <div className={`w-12 h-12 rounded-2xl overflow-hidden shadow-md transition-transform hover:scale-105 ${
+              isEmergencyMode ? 'ring-2 ring-red-500 animate-pulse' : 'ring-2 ring-cyan-400/40'
             }`}>
-              🌊
+              <img src="/logo.jpg" alt="AquaMind AI" className="w-full h-full object-cover" />
             </div>
             {isLiveSimulating && (
               <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">

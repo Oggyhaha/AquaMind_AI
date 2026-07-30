@@ -2,15 +2,24 @@ import React, { useState } from 'react';
 import { FileSpreadsheet, Download, FileText, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 import { GUJARAT_DISTRICTS, RESERVOIRS } from '../../data/mockData';
+import { useTheme } from '../../context/ThemeContext';
 
 export const ReportsView: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
+  const { isDark } = useTheme();
 
   const chartData = GUJARAT_DISTRICTS.map(d => ({
     name: d.name,
     Demand: d.waterDemandMLD,
     Supply: d.waterSupplyMLD,
   }));
+
+  // Theme-aware chart colors
+  const gridStroke = isDark ? '#334155' : '#e2e8f0';
+  const axisStroke = isDark ? '#94a3b8' : '#64748b';
+  const tooltipBg = isDark ? '#1e293b' : '#ffffff';
+  const tooltipBorder = isDark ? '#334155' : '#e2e8f0';
+  const tooltipText = isDark ? '#e2e8f0' : '#0f172a';
 
   // Real PDF / Formatted HTML Document Exporter
   const handleDownloadRealReport = (reportTitle: string) => {
@@ -161,19 +170,21 @@ export const ReportsView: React.FC = () => {
         <div className="h-88 w-full pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:opacity-20" />
-              <XAxis dataKey="name" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+              <XAxis dataKey="name" stroke={axisStroke} fontSize={12} tick={{ fill: axisStroke }} />
+              <YAxis stroke={axisStroke} fontSize={12} tick={{ fill: axisStroke }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'var(--tooltip-bg, #ffffff)',
-                  border: '1px solid #e2e8f0',
+                  backgroundColor: tooltipBg,
+                  border: `1px solid ${tooltipBorder}`,
                   borderRadius: '12px',
                   fontSize: '12px',
+                  color: tooltipText,
                 }}
-                wrapperClassName="dark:[&_.recharts-default-tooltip]:!bg-slate-800 dark:[&_.recharts-default-tooltip]:!border-slate-700 dark:[&_.recharts-default-tooltip]:!text-slate-100"
+                labelStyle={{ color: tooltipText, fontWeight: 'bold' }}
+                itemStyle={{ color: tooltipText }}
               />
-              <Legend wrapperStyle={{ fontSize: '12px' }} />
+              <Legend wrapperStyle={{ fontSize: '12px', color: axisStroke }} />
               <Bar dataKey="Demand" fill="#ef4444" radius={[6, 6, 0, 0]} />
               <Bar dataKey="Supply" fill="#0284c7" radius={[6, 6, 0, 0]} />
             </BarChart>

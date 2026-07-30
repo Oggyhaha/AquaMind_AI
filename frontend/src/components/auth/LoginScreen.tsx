@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
 import { DEMO_USERS } from '../../data/mockData';
+import { useTheme } from '../../context/ThemeContext';
 import {
   ShieldCheck,
   Lock,
@@ -27,7 +28,6 @@ interface LoginScreenProps {
 }
 
 const REGISTERED_USERS_KEY = 'aquamind_registered_users_v2';
-const THEME_KEY = 'aquamind_theme_preference';
 
 export const getStoredRegisteredUsers = (): Record<string, User & { password?: string }> => {
   try {
@@ -64,29 +64,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const [regRole, setRegRole] = useState<UserRole>('district_officer');
   const [regDistrict, setRegDistrict] = useState('Ahmedabad');
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(THEME_KEY);
-      if (stored) return stored === 'dark';
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } catch (e) {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-    try {
-      localStorage.setItem(THEME_KEY, isDarkMode ? 'dark' : 'light');
-    } catch (e) {}
-  }, [isDarkMode]);
-
-  const toggleTheme = () => setIsDarkMode(prev => !prev);
+  const { isDark: isDarkMode, toggleTheme } = useTheme();
 
   const handleSignInSubmit = (e: React.FormEvent) => {
     e.preventDefault();
