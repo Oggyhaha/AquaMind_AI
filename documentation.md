@@ -1,6 +1,5 @@
 # 🌊 AquaMind AI — Autonomous Water Intelligence Command OS
 ### Complete Enterprise Documentation & System Manual
-**Developed for Maverick Effect AI Challenge (Gujarat Hackathon)**  
 **Problem Category:** Water Intelligence Platform  
 
 ---

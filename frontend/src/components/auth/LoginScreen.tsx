@@ -168,11 +168,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Government of Gujarat Water Resources Department</p>
             </div>
           </div>
-
-          <div className="hidden sm:flex items-center space-x-2 bg-sky-50 dark:bg-slate-900/90 px-4 py-2 rounded-xl border border-sky-200 dark:border-slate-800 text-xs font-bold text-sky-700 dark:text-cyan-300 shadow-sm">
-            <Sparkles className="w-4 h-4 text-sky-600 dark:text-cyan-400" />
-            <span>Maverick Effect AI Challenge</span>
-          </div>
         </div>
 
         {/* Hero Title & Value Proposition */}
@@ -393,10 +388,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             </form>
           )}
 
-          {/* Quick Jury Demo Accounts Selector */}
+          {/* Quick Demo Accounts Selector */}
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              <span>Quick Jury Demo Accounts:</span>
+              <span>Quick Demo Accounts:</span>
               <span className="text-sky-600 dark:text-sky-400 font-mono bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-md">Password: Demo@123</span>
             </div>
 
