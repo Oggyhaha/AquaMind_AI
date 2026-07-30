@@ -131,15 +131,17 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
 
           {/* SVG Viewport (1000 x 700 Canvas) */}
           <div className="w-full h-full min-h-[480px] relative flex items-center justify-center pt-4">
-            <svg viewBox="0 0 1000 700" className="w-full h-auto max-h-[560px] drop-shadow-md select-none">
+            <svg
+          viewBox="0 0 950 680"
+          preserveAspectRatio="xMidYMid meet" className="w-full h-auto max-h-[560px] drop-shadow-md select-none">
               
               {/* Narmada Main Canal Feeder Line */}
               <path
                 d="M 800 430 Q 720 370 650 260 T 410 380 T 210 240"
                 fill="none"
                 stroke="#0284c7"
-                strokeWidth="4"
-                strokeDasharray="7 5"
+                strokeWidth="5"
+                strokeDasharray="6 4"
                 className="animate-pulse"
               />
               <text x="520" y="270" fill="#0369a1" fontSize="13" fontWeight="extrabold">
@@ -148,8 +150,31 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
 
               {/* RENDER FILTERED DISTRICT NODES (Fixes the filter button bug!) */}
               {filteredDistricts.map((d) => {
-                const x = ((d.lng - 68.5) / (74.5 - 68.5)) * 840 + 80;
-                const y = 620 - ((d.lat - 20.2) / (24.5 - 20.2)) * 540;
+                const MAP = {
+                    minLat: 20.0,
+                    maxLat: 24.8,
+                    minLng: 68.2,
+                    maxLng: 74.8,
+                    width: 950,
+                    height: 680,
+                    padding: 55,
+                };
+
+                const usableWidth = MAP.width - MAP.padding * 2;
+                const usableHeight = MAP.height - MAP.padding * 2;
+
+                const x =
+                    ((d.lng - MAP.minLng) /
+                        (MAP.maxLng - MAP.minLng)) *
+                        usableWidth +
+                    MAP.padding;
+
+                const y =
+                    usableHeight -
+                    ((d.lat - MAP.minLat) /
+                        (MAP.maxLat - MAP.minLat)) *
+                        usableHeight +
+                    MAP.padding;
                 const isSelected = selectedDistrict?.id === d.id;
 
                 return (
@@ -162,14 +187,14 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
                         fill="none"
                         stroke="#0ea5e9"
                         strokeWidth="3"
-                        className="animate-ping"
+                        className="animate-pulse"
                       />
                     )}
 
                     <circle
                       cx={x}
                       cy={y}
-                      r={isSelected ? "18" : "14"}
+                      r={isSelected ? "18" : "12"}
                       className={`transition-all duration-300 ${
                         d.riskLevel === 'critical' ? 'fill-red-500 stroke-red-700' :
                         d.riskLevel === 'high' ? 'fill-amber-500 stroke-amber-700' :
@@ -180,11 +205,16 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
 
                     <text
                       x={x}
-                      y={y + 24}
+                      y={y + 28}
                       textAnchor="middle"
                       className={`text-xs font-bold pointer-events-none fill-slate-900 group-hover:fill-sky-900 ${
                         isSelected ? 'fill-sky-900 font-black text-sm' : ''
                       }`}
+                      style={{
+                                paintOrder: "stroke",
+                                stroke: "#ffffff",
+                                strokeWidth: 4
+                            }}
                     >
                       {d.name}
                     </text>
@@ -228,6 +258,27 @@ export const GujaratMap: React.FC<GujaratMapProps> = ({
                 );
               })}
             </svg>
+            <defs>
+              <pattern
+                  id="grid"
+                  width="40"
+                  height="40"
+                  patternUnits="userSpaceOnUse"
+              >
+                  <path
+                      d="M 40 0 L 0 0 0 40"
+                      fill="none"
+                      stroke="#e5e7eb"
+                      strokeWidth="1"
+                  />
+              </pattern>
+          </defs>
+
+          <rect
+              width="100%"
+              height="100%"
+              fill="url(#grid)"
+          />
           </div>
 
           <div className="flex justify-between items-center text-xs text-slate-500 pt-3 border-t border-slate-200/80 font-medium">
