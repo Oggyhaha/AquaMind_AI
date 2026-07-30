@@ -34,11 +34,20 @@ import { ReportsView } from './components/reports/ReportsView';
 import { ReservoirsView } from './components/views/ReservoirsView';
 import { PipelinesView } from './components/views/PipelinesView';
 import { SplashScreen } from './components/ui/SplashScreen';
-import { ToastProvider } from './components/ui/Toast';
+import { ToastProvider, useToast as __useToastInternal } from './components/ui/Toast';
 import { AnimatedKPI } from './components/ui/AnimatedKPI';
 import { PrintDashboard } from './components/ui/PrintDashboard';
 
 import { Sparkles, PlusCircle, Droplets, Brain, Gauge, ClipboardList } from 'lucide-react';
+
+// Toast notification helper — will be initialized after ToastProvider renders
+let globalToast: { showToast: (type: 'success' | 'error' | 'warning' | 'info', title: string, message?: string) => void } | null = null;
+
+function ToastInitializer() {
+  const toast = __useToastInternal();
+  React.useEffect(() => { globalToast = toast; }, [toast]);
+  return null;
+}
 
 export function App() {
   const [showSplash, setShowSplash] = useState<boolean>(true);
@@ -118,6 +127,7 @@ export function App() {
     setAuthToken(token);
     setIsAuthenticated(true);
     setCurrentTab('dashboard');
+    setTimeout(() => globalToast?.showToast('success', `Welcome, ${user.name}`, `Authenticated as ${user.roleTitle}`), 500);
 
     const newLog: AuditLog = {
       id: `log_${Date.now()}`,
@@ -180,9 +190,8 @@ export function App() {
     const updatedNotifs = [newNotif, ...notifications];
     setNotifications(updatedNotifs);
     saveStoredNotifs(updatedNotifs);
+    globalToast?.showToast('error', '🚨 Emergency Declared', `"${title}" in ${district} — District Officers must take over.`);
   };
-
-  // 2. Emergency Takeover (District Officer)
   const handleTakeoverEmergency = async () => {
     if (!emergencyDetails) return;
     const updated: EmergencyState = {
@@ -210,15 +219,15 @@ export function App() {
     const updatedNotifs = [newNotif, ...notifications];
     setNotifications(updatedNotifs);
     saveStoredNotifs(updatedNotifs);
+    globalToast?.showToast('success', '✓ Emergency Takeover', `${activeUser.name} has taken over crisis operations.`);
   };
-
-  // 3. Emergency Deactivation (Secretary Only after Takeover)
   const handleDeactivateEmergency = async () => {
     setEmergencyDetails(null);
     saveStoredEmergency(null);
     try {
       await fetch('http://localhost:8000/api/emergency/deactivate', { method: 'POST' });
     } catch (e) {}
+    globalToast?.showToast('info', 'Emergency Resolved', 'Statewide emergency has been deactivated.');
   };
 
   // 4. Create Custom Work Order (Secretary or District Officer)
@@ -276,9 +285,8 @@ export function App() {
     const updatedNotifs = [newNotif, ...notifications];
     setNotifications(updatedNotifs);
     saveStoredNotifs(updatedNotifs);
+    globalToast?.showToast('success', 'Work Order Created', `"${taskData.title}" dispatched to ${taskData.assignedEngineerName}`);
   };
-
-  // Approve AI Recommendation
   const handleApproveRecommendation = (recId: string, approvalComment: string, digitalSignature: string) => {
     const rec = recommendations.find(r => r.id === recId);
     if (!rec) return;
@@ -340,11 +348,12 @@ export function App() {
   const pendingTasksCount = tasks.filter(t => t.status !== 'verified' && t.status !== 'closed').length;
 
   if (!isAuthenticated) {
-    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+    return <ToastProvider><ToastInitializer /><LoginScreen onLoginSuccess={handleLoginSuccess} /></ToastProvider>;
   }
 
   return (
     <ToastProvider>
+    <ToastInitializer />
     <div
           className={`min-h-screen font-sans flex flex-col text-sm transition-colors duration-300 ${
             isEmergencyMode
