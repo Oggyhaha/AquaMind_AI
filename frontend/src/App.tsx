@@ -57,6 +57,7 @@ export function App() {
   
   const activeUser: User = DEMO_USERS[activeUserRole];
   const [currentTab, setCurrentTab] = useState<NavTab>('dashboard');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   // Real Persistent State loaded from LocalStorage & Synchronized across browser tabs
   const [tasks, setTasks] = useState<OperationalTask[]>(() => getStoredTasks());
@@ -376,21 +377,24 @@ export function App() {
         notifications={notifications}
         onMarkNotificationRead={handleMarkNotificationRead}
         onToggleChat={() => setIsInterDeptChatOpen(!isInterDeptChatOpen)}
+        onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
       />
 
-      <div className="flex-1 flex max-w-[1920px] w-full mx-auto">
+      <div className="flex-1 flex max-w-[1920px] w-full mx-auto relative">
         
-        {/* Navigation Sidebar */}
+        {/* Navigation Sidebar (Desktop + Mobile Drawer) */}
         <Sidebar
           currentTab={currentTab}
           onSelectTab={setCurrentTab}
           userRole={activeUserRole}
           pendingTasksCount={pendingTasksCount}
           pendingApprovalsCount={pendingApprovalsCount}
+          mobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Main Workspace View */}
-        <main className="flex-1 p-8 space-y-6 overflow-y-auto max-w-full">
+        <main className="flex-1 p-3 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 overflow-y-auto w-full min-w-0 max-w-full">
           
           {/* Create Work Order Header Bar (Secretary & District Officer) */}
           {(activeUserRole === 'state_authority' || activeUserRole === 'district_officer') && (
@@ -602,11 +606,11 @@ export function App() {
 
       <button
         onClick={() => setIsAIChatOpen(true)}
-        className="fixed bottom-8 right-8 p-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 dark:from-sky-400 dark:to-blue-500 dark:hover:from-sky-300 dark:hover:to-blue-400 text-white shadow-2xl shadow-sky-500/40 dark:shadow-sky-900/50 z-40 flex items-center space-x-3 transform hover:scale-105 active:scale-95 transition-all"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 dark:from-sky-400 dark:to-blue-500 dark:hover:from-sky-300 dark:hover:to-blue-400 text-white shadow-2xl shadow-sky-500/40 dark:shadow-sky-900/50 z-40 flex items-center space-x-2 sm:space-x-3 transform hover:scale-105 active:scale-95 transition-all"
         title="Open Role-Adapted AI Assistant"
       >
-        <Sparkles className="w-6 h-6 animate-spin" />
-        <span className="font-extrabold text-xs">Ask AquaMind AI</span>
+        <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
+        <span className="font-extrabold text-[11px] sm:text-xs">Ask AquaMind AI</span>
       </button>
 
       <AIChatDrawer
